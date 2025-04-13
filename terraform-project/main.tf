@@ -1,43 +1,47 @@
 module "vpc" {
-  source               = "./modules/vpc"
-  cidr_block           = var.vpc_cidr
-  vpc_name             = var.vpc_name
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  public_subnet_azs    = var.public_subnet_azs
-  private_subnet_cidrs = var.private_subnet_cidrs
-  private_subnet_azs   = var.private_subnet_azs
-  sg_ingress_cidrs     = var.sg_ingress_cidrs
+  source             = "./modules/vpc"
+  vpc_cidr           = var.vpc_cidr
+  public_subnets     = var.public_subnets
+  private_subnets    = var.private_subnets
+  availability_zones = var.availability_zones
 }
 
-module "ec2_instance" {
-  source            = "./modules/ec2-instance"
-  ami_id            = var.ami_id
-  instance_type     = var.instance_type
-  # Launch the EC2 instance in the first private subnet
-  subnet_id         = module.vpc.private_subnet_ids[0]
-  security_group_id = module.vpc.security_group_id
-  instance_name     = var.instance_name
-  key_pair          = var.key_pair
+module "alb_sg" {
+  source        = "./modules/alb_sg"
+  vpc_id        = module.vpc.vpc_id
+  allowed_ports = var.alb_allowed_ports
 }
 
-module "alb" {
-  source                = "./modules/alb"
-  alb_name              = var.alb_name
-  alb_security_group_id = module.vpc.security_group_id
-  public_subnets        = module.vpc.public_subnet_ids
-  vpc_id                = module.vpc.vpc_id
-  target_group_name     = var.target_group_name
-  target_group_protocol = var.target_group_protocol
-  target_group_port     = var.target_group_port
-  listener_port         = var.listener_port
-  listener_protocol     = var.listener_protocol
-  health_check_path     = var.health_check_path
-  instance_id           = module.ec2_instance.instance_id
+module "instance_sg" {
+  source     = "./modules/instance_sg"
+  vpc_id    = module.vpc.vpc_id
+  alb_sg_id = module.alb_sg.sg_id
 }
 
 module "waf" {
-  source             = "./modules/waf"
-  web_acl_name       = var.web_acl_name
-  rate_limit         = var.rate_limit
-  associate_with_arn = module.alb.alb_arn
+  source         = "./modules/waf"
+  name           = var.waf_name
+  scope          = var.waf_scope
+  default_action = var.waf_default_action
+}
+
+module "ec2" {
+  source         = "./modules/ec2"
+  vpc_id         = module.vpc.vpc_id
+  # Deploy the instance into one of the private subnets (choose index 0)
+  subnet_id      = module.vpc.private_subnet_ids[0]
+  instance_sg_id = module.instance_sg.sg_id
+  instance_type  = var.instance_type
+  ami_id         = var.ami_id
+}
+
+module "alb" {
+  source                 = "./modules/alb"
+  vpc_id                 = module.vpc.vpc_id
+  public_subnets         = module.vpc.public_subnet_ids
+  alb_sg_id              = module.alb_sg.sg_id
+  target_group_port      = var.target_group_port
+  target_group_protocol  = var.target_group_protocol
+  instance_id            = module.ec2.instance_id
+  waf_acl_arn            = module.waf.waf_acl_arn
 }
