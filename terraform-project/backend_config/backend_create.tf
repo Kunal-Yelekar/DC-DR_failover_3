@@ -28,12 +28,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_s
 }
 
 
-  tags = {
-    Name        = "TerraformStateBucket"
-    Environment = terraform.workspace
-  }
-}
-
 # Optional: Create a DynamoDB table for state locking
 resource "aws_dynamodb_table" "terraform_locks" {
   name         = "terraform-locks"
