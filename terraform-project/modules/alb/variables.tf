@@ -1,34 +1,26 @@
-variable "vpc_id" {
-  description = "VPC ID for ALB"
+variable "name" {
+  description = "Name for the ALB"
   type        = string
 }
 
-variable "public_subnets" {
-  description = "List of public subnet IDs for ALB"
+variable "subnets" {
+  description = "Subnets in which the ALB will be deployed"
   type        = list(string)
 }
 
-variable "alb_sg_id" {
-  description = "Security Group ID for ALB"
-  type        = string
+variable "sg_ids" {
+  description = "List of security group IDs for the ALB"
+  type        = list(string)
 }
 
-variable "target_group_port" {
-  description = "Port for target group"
-  type        = number
+variable "load_balancer_type" {
+  description = "The type of the load balancer (e.g., application)"
+  type        = string
+  default     = "application"
 }
 
-variable "target_group_protocol" {
-  description = "Protocol for target group"
+variable "ip_address_type" {
+  description = "IP address type (ipv4 or dualstack)"
   type        = string
-}
-
-variable "instance_id" {
-  description = "EC2 instance ID to attach to target group"
-  type        = string
-}
-
-variable "waf_acl_arn" {
-  description = "WAF ACL ARN to associate with ALB"
-  type        = string
+  default     = "ipv4"
 }
