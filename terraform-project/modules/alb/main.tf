@@ -40,30 +40,44 @@ resource "aws_lb_listener" "this" {
   }
 }
 
+# <-- This resource registers the EC2 instances as targets -->
+resource "aws_lb_target_group_attachment" "ec2_targets" {
+  count            = length(var.target_instance_ids)
+  target_group_arn = aws_lb_target_group.this.arn
+  target_id        = var.target_instance_ids[count.index]
+  port             = var.target_group_port
+}
+
 resource "aws_wafv2_web_acl" "this" {
   name        = var.waf_name
   description = "WAF for ${var.alb_name}"
   scope       = "REGIONAL"
+  
   default_action {
     allow {}
   }
+  
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = var.waf_name
     sampled_requests_enabled   = true
   }
+  
   rule {
     name     = "RateLimitRule"
     priority = 1
+    
     action {
       block {}
     }
+    
     statement {
       rate_based_statement {
         limit              = 2000
         aggregate_key_type = "IP"
       }
     }
+    
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "RateLimitRule"
