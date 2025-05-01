@@ -78,3 +78,9 @@ variable "waf_name" {
   description = "Name for the WAF"
   type        = string
 }
+
+variable "target_instance_ids" {
+  description = "List of EC2 instance IDs to be registered as targets"
+  type        = list(string)
+  default     = []  # Provide instance IDs when invoking the module
+}
