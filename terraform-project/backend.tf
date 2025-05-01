@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket         = var.remote_state_bucket
+    bucket         = "my-unique-terraform-state-bucket-knl2"
     key            = var.remote_state_key
-    region         = var.aws_region
-    dynamodb_table = var.remote_state_dynamodb_table
+    region         = "ap-south-1"
+    dynamodb_table = "terraform-locks"
   }
 }
