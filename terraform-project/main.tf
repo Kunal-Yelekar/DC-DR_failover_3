@@ -1,7 +1,3 @@
-provider "aws" {
-  region = var.region
-}
-
 # ---------- VPC Modules ----------
 module "dc_vpc" {
   source             = "./modules/vpc"
@@ -23,7 +19,6 @@ module "dr_vpc" {
 resource "aws_vpc_peering_connection" "dc_dr_peering" {
   vpc_id      = module.dc_vpc.vpc_id
   peer_vpc_id = module.dr_vpc.vpc_id
-  peer_region = var.region
   auto_accept = true
   tags = {
     Name = "DC-DR-Peering"
@@ -89,11 +84,11 @@ module "dr_ec2" {
 # ---------- ALB Modules ----------
 module "dc_alb" {
   source                     = "./modules/alb"
-  alb_name                   = "DC_ALB"
+  alb_name                   = "dc-alb"             # was "DC_ALB", now "dc-alb"
   vpc_id                     = module.dc_vpc.vpc_id
   subnet_ids                 = module.dc_vpc.public_subnet_ids
   sg_ids                     = [module.dc_sec_groups.alb_sg_id]
-  alb_target_group_name      = "DC_TG"
+  alb_target_group_name      = "dc-tg"  # was "DC_TG", now "dc-tg"
   target_group_port          = var.alb_target_group_port
   target_group_protocol      = var.alb_target_group_protocol
   listener_port              = var.alb_listener_port
@@ -104,16 +99,16 @@ module "dc_alb" {
   health_check_interval      = var.health_check_interval
   health_check_matcher       = var.health_check_matcher
   health_check_path          = var.health_check_path
-  waf_name                   = "DC_WAF"
+  waf_name                   = "dc-waf"  # Also follow naming rules if applicable
 }
 
 module "dr_alb" {
   source                     = "./modules/alb"
-  alb_name                   = "DR_ALB"
+  alb_name                   = "dr-alb"             # was "DR_ALB", now "dr-alb"
   vpc_id                     = module.dr_vpc.vpc_id
   subnet_ids                 = module.dr_vpc.public_subnet_ids
   sg_ids                     = [module.dr_sec_groups.alb_sg_id]
-  alb_target_group_name      = "DR_TG"
+  alb_target_group_name      = "dr-tg"  # was "DR_TG", now "dr-tg"
   target_group_port          = var.alb_target_group_port
   target_group_protocol      = var.alb_target_group_protocol
   listener_port              = var.alb_listener_port
@@ -124,8 +119,9 @@ module "dr_alb" {
   health_check_interval      = var.health_check_interval
   health_check_matcher       = var.health_check_matcher
   health_check_path          = var.health_check_path
-  waf_name                   = "DR_WAF"
+  waf_name                   = "dr-waf"  # Update accordingly
 }
+
 
 # ---------- Global Accelerator Module ----------
 module "global_accelerator" {
