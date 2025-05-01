@@ -1,186 +1,154 @@
-provider "aws" {
-  region = var.default_region
-}
-
-#######################
-# VPC Creation Modules
-#######################
+# ------------------------------
+# Create VPCs for DC and DR
+# ------------------------------
 
 module "dc_vpc" {
-  source             = "./modules/vpc"
-  vpc_name           = "DC_VPC"
-  vpc_cidr           = var.dc_vpc_cidr
-  public_subnets     = var.dc_public_subnets
-  private_subnets    = var.dc_private_subnets
-  availability_zones = var.dc_azs
-  environment        = "DC"
+  source                = "./modules/vpc"
+  vpc_name              = "DC_VPC"
+  vpc_cidr              = var.dc_vpc_cidr
+  public_subnet_cidrs   = var.dc_public_subnets
+  private_subnet_cidrs  = var.dc_private_subnets
+  azs                   = var.azs
 }
 
 module "dr_vpc" {
-  source             = "./modules/vpc"
-  vpc_name           = "DR_VPC"
-  vpc_cidr           = var.dr_vpc_cidr
-  public_subnets     = var.dr_public_subnets
-  private_subnets    = var.dr_private_subnets
-  availability_zones = var.dr_azs
-  environment        = "DR"
+  source                = "./modules/vpc"
+  vpc_name              = "DR_VPC"
+  vpc_cidr              = var.dr_vpc_cidr
+  public_subnet_cidrs   = var.dr_public_subnets
+  private_subnet_cidrs  = var.dr_private_subnets
+  azs                   = var.azs
 }
 
-#############################
-# VPC Peering & Route Setup
-#############################
+# ------------------------------
+# VPC Peering between DC and DR
+# ------------------------------
 
-resource "aws_vpc_peering_connection" "dc_dr_peering" {
-  vpc_id       = module.dc_vpc.vpc_id
-  peer_vpc_id  = module.dr_vpc.vpc_id
-  peer_region  = var.default_region
-  auto_accept  = true
+resource "aws_vpc_peering_connection" "dc_dr" {
+  vpc_id      = module.dc_vpc.vpc_id
+  peer_vpc_id = module.dr_vpc.vpc_id
+  auto_accept = true
 
   tags = {
     Name = "DC-DR-Peering"
   }
 }
 
+# Update route tables so traffic between VPCs goes via the peering connection.
 resource "aws_route" "dc_to_dr" {
   route_table_id              = module.dc_vpc.public_route_table_id
   destination_cidr_block      = var.dr_vpc_cidr
-  vpc_peering_connection_id   = aws_vpc_peering_connection.dc_dr_peering.id
+  vpc_peering_connection_id   = aws_vpc_peering_connection.dc_dr.id
 }
 
 resource "aws_route" "dr_to_dc" {
   route_table_id              = module.dr_vpc.public_route_table_id
   destination_cidr_block      = var.dc_vpc_cidr
-  vpc_peering_connection_id   = aws_vpc_peering_connection.dc_dr_peering.id
+  vpc_peering_connection_id   = aws_vpc_peering_connection.dc_dr.id
 }
 
-#############################
-# EC2 Instance Deployment
-#############################
+# ------------------------------
+# Security Groups
+# ------------------------------
+
+module "dc_security_groups" {
+  source           = "./modules/security_groups"
+  vpc_id           = module.dc_vpc.vpc_id
+  alb_sg_name      = "DC_ALB_SG"
+  ec2_sg_name      = "DC_EC2_SG"
+  alb_ingress_port = 80
+  alb_ingress_cidrs = ["0.0.0.0/0"]
+  ec2_ingress_port  = 80
+  admin_cidrs      = var.admin_cidrs
+}
+
+module "dr_security_groups" {
+  source           = "./modules/security_groups"
+  vpc_id           = module.dr_vpc.vpc_id
+  alb_sg_name      = "DR_ALB_SG"
+  ec2_sg_name      = "DR_EC2_SG"
+  alb_ingress_port = 80
+  alb_ingress_cidrs = ["0.0.0.0/0"]
+  ec2_ingress_port  = 80
+  admin_cidrs      = var.admin_cidrs
+}
+
+# ------------------------------
+# Compute Resources (EC2)
+# ------------------------------
 
 module "dc_ec2" {
-  source             = "./modules/ec2"
-  instance_count     = var.dc_instance_count
-  ami                = var.ami
-  instance_type      = var.dc_instance_type
-  subnet_ids         = module.dc_vpc.public_subnet_ids
-  security_group_ids = [var.dc_ec2_sg]
-  environment        = "DC"
-  tags               = var.tags
+  source              = "./modules/ec2"
+  instance_name       = "DC_EC2"
+  vpc_id              = module.dc_vpc.vpc_id
+  subnet_id           = element(module.dc_vpc.public_subnets, 0)
+  instance_ami        = var.ec2_ami
+  instance_type       = var.ec2_instance_type
+  key_name            = var.key_name
+  security_group_ids  = [module.dc_security_groups.ec2_sg_id]
 }
 
 module "dr_ec2" {
-  source             = "./modules/ec2"
-  instance_count     = var.dr_instance_count
-  ami                = var.ami
-  instance_type      = var.dr_instance_type
-  subnet_ids         = module.dr_vpc.public_subnet_ids
-  security_group_ids = [var.dr_ec2_sg]
-  environment        = "DR"
-  tags               = var.tags
+  source              = "./modules/ec2"
+  instance_name       = "DR_EC2"
+  vpc_id              = module.dr_vpc.vpc_id
+  subnet_id           = element(module.dr_vpc.public_subnets, 0)
+  instance_ami        = var.ec2_ami
+  instance_type       = var.ec2_instance_type
+  key_name            = var.key_name
+  security_group_ids  = [module.dr_security_groups.ec2_sg_id]
 }
 
-#############################################
-# ALB & Target Group with WAF Integration
-#############################################
+# ------------------------------
+# Application Load Balancers (ALB)
+# ------------------------------
 
 module "dc_alb" {
-  source                = "./modules/alb"
-  environment           = "DC"
-  subnet_ids            = module.dc_vpc.public_subnet_ids
-  security_group_ids    = [var.dc_alb_sg]
-  target_group_port     = var.target_group_port
-  target_group_protocol = var.target_group_protocol
-  health_check_path     = var.health_check_path
-  health_check_matcher  = var.health_check_matcher
-  listener_port         = var.listener_port
-  listener_protocol     = var.listener_protocol
-  vpc_id                = module.dc_vpc.vpc_id
-  tags                  = var.tags
+  source              = "./modules/alb"
+  alb_name            = "DC_ALB"
+  vpc_id              = module.dc_vpc.vpc_id
+  subnet_ids          = module.dc_vpc.public_subnets
+  security_group_ids  = [module.dc_security_groups.alb_sg_id]
+  target_protocol     = "HTTP"
+  target_port         = 80
+  listener_protocol   = "HTTP"
+  listener_port       = 80
+  health_check_protocol = "HTTP"
+  health_check_port   = 80
+  health_check_path   = "/"
+  waf_name            = "DC_WAF"
 }
 
 module "dr_alb" {
-  source                = "./modules/alb"
-  environment           = "DR"
-  subnet_ids            = module.dr_vpc.public_subnet_ids
-  security_group_ids    = [var.dr_alb_sg]
-  target_group_port     = var.target_group_port
-  target_group_protocol = var.target_group_protocol
-  health_check_path     = var.health_check_path
-  health_check_matcher  = var.health_check_matcher
-  listener_port         = var.listener_port
-  listener_protocol     = var.listener_protocol
-  vpc_id                = module.dr_vpc.vpc_id
-  tags                  = var.tags
+  source              = "./modules/alb"
+  alb_name            = "DR_ALB"
+  vpc_id              = module.dr_vpc.vpc_id
+  subnet_ids          = module.dr_vpc.public_subnets
+  security_group_ids  = [module.dr_security_groups.alb_sg_id]
+  target_protocol     = "HTTP"
+  target_port         = 80
+  listener_protocol   = "HTTP"
+  listener_port       = 80
+  health_check_protocol = "HTTP"
+  health_check_port   = 80
+  health_check_path   = "/"
+  waf_name            = "DR_WAF"
 }
 
-##################################
-# Global Accelerator Setup Module
-##################################
+# ------------------------------
+# Global Accelerator for Failover
+# ------------------------------
 
 module "global_accelerator" {
-  source                   = "./modules/ga"
-  environment              = "GA"
-  region                   = var.default_region
-  dc_alb_arn               = module.dc_alb.alb_arn
-  dr_alb_arn               = module.dr_alb.alb_arn
-  ga_listener_port         = var.ga_listener_port
-  ga_listener_protocol     = var.ga_listener_protocol
-  ga_health_check_port     = var.ga_health_check_port
-  ga_health_check_protocol = var.ga_health_check_protocol
+  source             = "./modules/global_accelerator"
+  ga_name            = "Global_Accel"
+  listener_protocol  = "TCP"
+  listener_port      = 80
+  dc_alb_arn         = module.dc_alb.alb_arn
+  dr_alb_arn         = module.dr_alb.alb_arn
 }
 
-##################################
-# Monitoring: CloudWatch Alarms
-##################################
-
-resource "aws_cloudwatch_metric_alarm" "dc_alb_unhealthy_hosts" {
-  alarm_name          = "DC-ALB-Unhealthy-Hosts"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "UnHealthyHostCount"
-  namespace           = "AWS/ApplicationELB"
-  period              = 60
-  statistic           = "Average"
-  threshold           = 1
-  alarm_description   = "Alarm when unhealthy host count is greater than 1"
-  dimensions = {
-    LoadBalancer = module.dc_alb.alb_arn
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "dr_alb_unhealthy_hosts" {
-  alarm_name          = "DR-ALB-Unhealthy-Hosts"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "UnHealthyHostCount"
-  namespace           = "AWS/ApplicationELB"
-  period              = 60
-  statistic           = "Average"
-  threshold           = 1
-  alarm_description   = "Alarm when unhealthy host count is greater than 1"
-  dimensions = {
-    LoadBalancer = module.dr_alb.alb_arn
-  }
-}
-
-##################################
-# Backup – Using AWS Backup Vault
-##################################
-
-resource "aws_backup_vault" "this" {
-  name = "${var.environment}-backup-vault"
-  tags = var.tags
-}
-
-resource "aws_backup_plan" "this" {
-  name = "${var.environment}-backup-plan"
-  rule {
-    rule_name         = "daily-backup"
-    target_vault_name = aws_backup_vault.this.name
-    schedule          = "cron(0 12 * * ? *)"
-    lifecycle {
-      cold_storage_after = 30
-      delete_after       = 90
-    }
-  }
-}
+# ------------------------------
+# (Optional) CloudWatch Alarms, Backup, etc.
+# ------------------------------
+# Add resources as needed for monitoring and backup.
