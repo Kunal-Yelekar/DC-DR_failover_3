@@ -14,6 +14,7 @@ output "dr_alb_dns_name" {
   value = module.dr_alb.alb_dns_name
 }
 
-output "global_accelerator_dns_name" {
-  value = module.global_accelerator.accelerator_dns_name
+output "global_accelerator_dns" {
+  value = module.global_accelerator.accelerator_dns
 }
+
