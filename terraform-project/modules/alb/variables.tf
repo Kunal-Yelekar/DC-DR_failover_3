@@ -1,16 +1,26 @@
-variable "environment" {
-  description = "Environment name, e.g., DC or DR"
+variable "alb_name" {
+  description = "Name for the ALB"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "VPC ID in which to deploy the ALB"
   type        = string
 }
 
 variable "subnet_ids" {
-  description = "Subnets for ALB deployment"
+  description = "List of subnet IDs for the ALB"
   type        = list(string)
 }
 
-variable "security_group_ids" {
-  description = "Security groups for ALB"
+variable "sg_ids" {
+  description = "List of security group IDs for the ALB"
   type        = list(string)
+}
+
+variable "alb_target_group_name" {
+  description = "Name for the target group"
+  type        = string
 }
 
 variable "target_group_port" {
@@ -19,42 +29,52 @@ variable "target_group_port" {
 }
 
 variable "target_group_protocol" {
-  description = "Protocol for target group"
+  description = "Protocol for target group (HTTP/HTTPS)"
   type        = string
-  default     = "HTTP"
-}
-
-variable "health_check_path" {
-  description = "Path for health check"
-  type        = string
-  default     = "/"
-}
-
-variable "health_check_matcher" {
-  description = "Matcher for health check"
-  type        = string
-  default     = "200"
 }
 
 variable "listener_port" {
-  description = "Listener port for ALB"
+  description = "ALB listener port"
   type        = number
-  default     = 80
 }
 
 variable "listener_protocol" {
-  description = "Listener protocol for ALB"
-  type        = string
-  default     = "HTTP"
-}
-
-variable "vpc_id" {
-  description = "VPC ID for target group"
+  description = "ALB listener protocol (HTTP/HTTPS)"
   type        = string
 }
 
-variable "tags" {
-  description = "Tags applied to ALB and target group"
-  type        = map(string)
-  default     = {}
+variable "health_check_healthy_threshold" {
+  description = "Healthy threshold for ALB health check"
+  type        = number
+}
+
+variable "health_check_unhealthy_threshold" {
+  description = "Unhealthy threshold for ALB health check"
+  type        = number
+}
+
+variable "health_check_timeout" {
+  description = "Timeout (in seconds) for ALB health check"
+  type        = number
+}
+
+variable "health_check_interval" {
+  description = "Interval (in seconds) for ALB health check"
+  type        = number
+}
+
+variable "health_check_path" {
+  description = "URL path for ALB health check"
+  type        = string
+}
+
+variable "health_check_matcher" {
+  description = "Matcher for ALB health check (e.g. 200-299)"
+  type        = string
+  default     = "200-299"
+}
+
+variable "waf_name" {
+  description = "Name for the WAF"
+  type        = string
 }
