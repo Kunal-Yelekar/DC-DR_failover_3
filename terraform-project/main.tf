@@ -84,11 +84,11 @@ module "dr_ec2" {
 # ---------- ALB Modules ----------
 module "dc_alb" {
   source                     = "./modules/alb"
-  alb_name                   = "dc-alb"             # was "DC_ALB", now "dc-alb"
+  alb_name                   = "dc-alb"
   vpc_id                     = module.dc_vpc.vpc_id
   subnet_ids                 = module.dc_vpc.public_subnet_ids
   sg_ids                     = [module.dc_sec_groups.alb_sg_id]
-  alb_target_group_name      = "dc-tg"  # was "DC_TG", now "dc-tg"
+  alb_target_group_name      = "dc-tg"
   target_group_port          = var.alb_target_group_port
   target_group_protocol      = var.alb_target_group_protocol
   listener_port              = var.alb_listener_port
@@ -99,16 +99,19 @@ module "dc_alb" {
   health_check_interval      = var.health_check_interval
   health_check_matcher       = var.health_check_matcher
   health_check_path          = var.health_check_path
-  waf_name                   = "dc-waf"  # Also follow naming rules if applicable
+  waf_name                   = "dc-waf"
+  
+  # Pass the list of instance IDs for your DC environment
+  target_instance_ids        = module.dc_ec2.instance_ids
 }
 
 module "dr_alb" {
   source                     = "./modules/alb"
-  alb_name                   = "dr-alb"             # was "DR_ALB", now "dr-alb"
+  alb_name                   = "dr-alb"
   vpc_id                     = module.dr_vpc.vpc_id
   subnet_ids                 = module.dr_vpc.public_subnet_ids
   sg_ids                     = [module.dr_sec_groups.alb_sg_id]
-  alb_target_group_name      = "dr-tg"  # was "DR_TG", now "dr-tg"
+  alb_target_group_name      = "dr-tg"
   target_group_port          = var.alb_target_group_port
   target_group_protocol      = var.alb_target_group_protocol
   listener_port              = var.alb_listener_port
@@ -119,7 +122,10 @@ module "dr_alb" {
   health_check_interval      = var.health_check_interval
   health_check_matcher       = var.health_check_matcher
   health_check_path          = var.health_check_path
-  waf_name                   = "dr-waf"  # Update accordingly
+  waf_name                   = "dr-waf"
+
+  # Pass the list of instance IDs for your DR environment
+  target_instance_ids        = module.dr_ec2.instance_ids
 }
 
 
