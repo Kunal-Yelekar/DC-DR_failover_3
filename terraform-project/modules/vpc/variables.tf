@@ -1,14 +1,30 @@
-variable "name" {
-  description = "Name tag for the VPC"
+variable "vpc_name" {
+  description = "Name of the VPC"
   type        = string
 }
 
-variable "cidr" {
+variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
 }
 
-variable "azs" {
-  description = "List of availability zones to deploy subnets in"
+variable "public_subnets" {
+  description = "List of public subnet CIDRs"
   type        = list(string)
+}
+
+variable "private_subnets" {
+  description = "List of private subnet CIDRs"
+  type        = list(string)
+  default     = []
+}
+
+variable "availability_zones" {
+  description = "List of availability zones"
+  type        = list(string)
+}
+
+variable "environment" {
+  description = "Environment name (e.g. DC or DR)"
+  type        = string
 }
