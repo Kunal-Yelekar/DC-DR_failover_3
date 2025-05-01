@@ -1,5 +1,5 @@
 variable "alb_name" {
-  description = "Name for the ALB"
+  description = "Name for the ALB (use only alphanumeric characters and hyphens)"
   type        = string
 }
 
