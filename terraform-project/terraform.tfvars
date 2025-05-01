@@ -1,9 +1,9 @@
-region                = "ap-south-1"
-
-# Backend configuration
-backend_bucket         = "your-terraform-backend-bucket"
-backend_region         = "ap-south-1"
-backend_dynamodb_table = "terraform-lock-table"
+# region                = "ap-south-1"
+# 
+# # Backend configuration
+# backend_bucket         = "your-terraform-backend-bucket"
+# backend_region         = "ap-south-1"
+# backend_dynamodb_table = "terraform-lock-table"
 
 # VPC overrides (if needed; defaults are set in variables.tf)
 dc_vpc_cidr           = "10.0.0.0/16"
@@ -16,14 +16,15 @@ dr_public_subnets     = ["10.1.1.0/24", "10.1.2.0/24"]
 
 # EC2 settings
 dc_instance_count     = 1
-dc_ami_id             = "ami-0abcdef1234567890"
+dc_ami_id             = "ami-0e35ddab05955cf57"
 dc_instance_type      = "t2.micro"
 
 dr_instance_count     = 1
-dr_ami_id             = "ami-0abcdef1234567890"
+dr_ami_id             = "ami-0e35ddab05955cf57"
 dr_instance_type      = "t2.micro"
 
 # ALB settings
+# Replace underscores with hyphens
 alb_ingress_port          = 80
 alb_target_group_port     = 80
 alb_target_group_protocol = "HTTP"
@@ -35,6 +36,12 @@ health_check_timeout      = 5
 health_check_interval     = 30
 health_check_path         = "/health"
 health_check_matcher      = "200-299"
+
+## Update names to use hyphens instead of underscores
+#dc_alb_name             = "dc-alb"
+#dr_alb_name             = "dr-alb"
+#dc_alb_target_group_name = "dc-tg"
+#dr_alb_target_group_name = "dr-tg"
 
 # Global Accelerator settings
 ga_health_check_interval = 30
