@@ -53,7 +53,7 @@ variable "dc_instance_count" {
 variable "dc_ami_id" {
   description = "AMI ID for DC EC2 instance"
   type        = string
-  default     = "ami-0abcdef1234567890"
+  default     = "ami-0e35ddab05955cf57"
 }
 
 variable "dc_instance_type" {
@@ -71,7 +71,7 @@ variable "dr_instance_count" {
 variable "dr_ami_id" {
   description = "AMI ID for DR EC2 instance"
   type        = string
-  default     = "ami-0abcdef1234567890"
+  default     = "ami-0e35ddab05955cf57"
 }
 
 variable "dr_instance_type" {
@@ -197,7 +197,9 @@ variable "admin_ip_cidr" {
   default     = ["YOUR_ADMIN_IP/32"]
 }
 
+
 # --------- Backend Configuration Variables ---------
+/*
 variable "backend_bucket" {
   description = "S3 bucket for remote Terraform state"
   type        = string
@@ -212,3 +214,4 @@ variable "backend_dynamodb_table" {
   description = "DynamoDB table for state locking"
   type        = string
 }
+*/
