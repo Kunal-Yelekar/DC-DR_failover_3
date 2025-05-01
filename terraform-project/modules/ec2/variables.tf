@@ -1,36 +1,29 @@
 variable "instance_count" {
-  description = "Number of EC2 instances to create"
+  description = "Number of EC2 instances to launch"
   type        = number
-  default     = 1
 }
 
-variable "ami" {
-  description = "AMI ID to use for the EC2 instance"
+variable "ami_id" {
+  description = "AMI ID for the instance"
   type        = string
 }
 
 variable "instance_type" {
-  description = "Instance type for the EC2 instance"
+  description = "Instance type"
   type        = string
 }
 
-variable "subnet_ids" {
-  description = "Subnets in which to deploy EC2 instances"
-  type        = list(string)
-}
-
-variable "security_group_ids" {
-  description = "Security group IDs for the EC2 instance"
-  type        = list(string)
-}
-
-variable "environment" {
-  description = "Environment name, e.g., DC or DR"
+variable "subnet_id" {
+  description = "Subnet ID where the instance will launch"
   type        = string
 }
 
-variable "tags" {
-  description = "Tags to apply to resources"
-  type        = map(string)
-  default     = {}
+variable "sg_ids" {
+  description = "List of security group IDs for the instance"
+  type        = list(string)
+}
+
+variable "instance_name" {
+  description = "Name prefix for the instances"
+  type        = string
 }
