@@ -48,6 +48,9 @@ ga_health_check_interval = 30
 ga_threshold_count       = 3
 ga_listener_port         = 80
 ga_listener_protocol     = "TCP"
+# to manually control the failover { 0 => no traffic, 128 => full traffic}
+dc_weight                = 128
+dr_weight                = 0
 
 # Security Groups
 allowed_sources      = ["0.0.0.0/0"]
