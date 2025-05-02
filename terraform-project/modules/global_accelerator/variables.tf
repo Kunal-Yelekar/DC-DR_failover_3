@@ -32,3 +32,15 @@ variable "global_accelerator_protocol" {
   description = "Listener protocol for Global Accelerator (e.g. TCP)"
   type        = string
 }
+
+variable "dc_weight" {
+  description = "Weight for the DC ALB endpoint. Set to 128 to be active, 0 to put in standby."
+  type        = number
+  default     = 128
+}
+
+variable "dr_weight" {
+  description = "Weight for the DR ALB endpoint. Set to 128 to be active, 0 to put in standby."
+  type        = number
+  default     = 128
+}
