@@ -35,3 +35,4 @@ resource "aws_globalaccelerator_endpoint_group" "this" {
     client_ip_preservation_enabled = true
   }
 }
+
