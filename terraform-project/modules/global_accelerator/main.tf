@@ -25,13 +25,13 @@ resource "aws_globalaccelerator_endpoint_group" "this" {
 
   endpoint_configuration {
     endpoint_id                    = var.endpoint_alb_dc
-    weight                         = 128
+    weight                         = var.dc_weight
     client_ip_preservation_enabled = true
   }
 
   endpoint_configuration {
     endpoint_id                    = var.endpoint_alb_dr
-    weight                         = 128
+    weight                         = var.dr_weight
     client_ip_preservation_enabled = true
   }
 }
