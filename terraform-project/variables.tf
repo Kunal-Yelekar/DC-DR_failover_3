@@ -197,6 +197,17 @@ variable "admin_ip_cidr" {
   default     = ["YOUR_ADMIN_IP/32"]
 }
 
+variable "dc_weight" {
+  description = "Weight for the DC ALB endpoint. Set to 128 to be active, 0 to put in standby."
+  type        = number
+  default     = 128
+}
+
+variable "dr_weight" {
+  description = "Weight for the DR ALB endpoint. Set to 128 to be active, 0 to put in standby."
+  type        = number
+  default     = 128
+}
 
 # --------- Backend Configuration Variables ---------
 /*
